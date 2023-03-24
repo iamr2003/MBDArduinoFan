@@ -19,6 +19,7 @@ int p = .001;
  int scaled =  (goal-1000)/7;
 const int baudrate = 115200;
 unsigned long rpm = 0;
+unsigned long loop_iter = 0;
 // #include <TimerOne.h>
 
 //sensing
@@ -157,6 +158,8 @@ void setup() {
 //   }
 // }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void loop() {
   // put your main code here, to run repeatedly:
     // delay(1000);
@@ -221,6 +224,7 @@ void loop() {
   Serial.print("RPM:");
   Serial.println(rpm); //DavidM: put this on an interrupt timer
 
+  loop_iter++;
   delay(100); //delay is :-(
 
 };
