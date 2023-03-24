@@ -1,5 +1,8 @@
+// Any header files?
+
 #define PIN_SENSE 3 //where we connected the fan sense pin. Must be an interrupt capable pin (2 or 3 on Arduino Uno)
 #define DEBOUNCE 10 //0 is fine for most fans, crappy fans may require 10 or 20 to filter out noise
+// you can also use a low pass filter on the input pin to stablize the measurement
 #define FANSTUCK_THRESHOLD 500 //if no interrupts were received for 500ms, consider the fan as stuck and report 0 RPM
 //Interrupt handler. Stores the timestamps of the last 2 interrupts and handles debouncing
 
@@ -10,6 +13,12 @@ const byte OC1B_PIN = 10;
 const word PWM_FREQ_HZ = 25000; //Adjust this value to adjust the frequency
 const word TCNT1_TOP = 16000000/(2*PWM_FREQ_HZ);
 
+unsigned long m = 0; //m is elapsed time. Maybe try micros and use bitshifting instead of division
+int p = .001;
+ int goal = 1300;
+ int scaled =  (goal-1000)/7;
+const int baudrate = 115200;
+unsigned long rpm = 0;
 // #include <TimerOne.h>
 
 //sensing
@@ -19,18 +28,24 @@ const word TCNT1_TOP = 16000000/(2*PWM_FREQ_HZ);
 //  https://projecthub.arduino.cc/tylerpeppy/b5618d48-7ae8-4fc0-bca5-a857c36fcc5e
 
 unsigned long volatile ts1=0,ts2=0;
+
 void tachISR() {
-    unsigned long m=millis();
+    m = millis();
     if((m-ts2)>DEBOUNCE){
         ts1=ts2;
         ts2=m;
     }
 }
+
 //Calculates the RPM based on the timestamps of the last 2 interrupts. Can be called at any time.
-unsigned long calcRPM(){
-    if(millis()-ts2<FANSTUCK_THRESHOLD&&ts2!=0){
-        return (60000/(ts2-ts1))/2;
-    }else return 0;
+void calcRPM(){
+    if(ts2!=0) { //Probably make this logic faster with a (I think) select argument operator. Its been awhile since I did C/C++
+      if (m-ts2<FANSTUCK_THRESHOLD) {
+        rpm = (120000/(ts2-ts1)); //replace millis with micros and use bitshifting for greater performance on division
+    } else { 
+      rpm = 0;
+    }
+}
 }
 
 // void setup(){
@@ -79,7 +94,10 @@ unsigned long calcRPM(){
 //     OCR2B = (uint8_t)(79*f);
 // }
 
-void setup(){
+void setup() {
+  
+  m = millis();
+
   pinMode(OC1A_PIN, OUTPUT);
 
   // Set Timer1 configuration
@@ -90,6 +108,14 @@ void setup(){
   // ICES1      = 0b0    (Input capture edge select disabled)
   // CS(12:10)  = 0b001  (Input clock select = clock/1)
 
+    Serial.begin(baudrate); //enable serial so we can see the RPM in the serial monitor
+    
+    //setPwmDuty(50);
+    Serial.println("----START----");
+
+    // should be 1700
+    pinMode(PIN_SENSE,INPUT_PULLUP); //set the sense pin as input with pullup resistor
+    attachInterrupt(digitalPinToInterrupt(PIN_SENSE),tachISR,FALLING); //set tachISR to be triggered when the signal on the sense pin goes low
 
   // Clear Timer1 control and count registers
   TCCR1A = 0;
@@ -114,13 +140,8 @@ void setup(){
     // setPWM1B(0.2f); //set duty to 20% on pin 10
     // setPWM2(0.8f); //set duty to 80% on pin 3
 
-    // should be 1700
-    pinMode(PIN_SENSE,INPUT_PULLUP); //set the sense pin as input with pullup resistor
-    attachInterrupt(digitalPinToInterrupt(PIN_SENSE),tachISR,FALLING); //set tachISR to be triggered when the signal on the sense pin goes low
-    Serial.begin(9600); //enable serial so we can see the RPM in the serial monitor
-    // setPwmDuty(50);
-    Serial.println("----START----");
-}
+
+};
 
 
 // goal between 1000-1700 RPM
@@ -161,12 +182,13 @@ void loop() {
   // setPwmDuty(100); //Change this value 0-100 to adjust duty cycle
   // delay(10000);
 
-  int p = .001;
-  int goal = 1300;
+    m=millis();
+    p = .001;
+    goal = 1300;
   // rescale with f to be within bounds
   // Serial.println(goal-1000); 
 
-  int scaled =  (goal-1000)/7;
+    scaled =  (goal-1000)/7; //DavidM: why 7? if you can use 8, replace div with >>3
   // Serial.print("Initial scaled:");
   // Serial.println(scaled);  
 
@@ -194,12 +216,17 @@ void loop() {
   // }
 
   // delay(100);
+  calcRPM(); //DavidM: put this on an interrupt timer. Note: you don't have to sample at 25khz, try like 50 Hz.
+  
   Serial.print("RPM:");
-  Serial.println(calcRPM());
-  delay(100);
+  Serial.println(rpm); //DavidM: put this on an interrupt timer
 
-}
+  delay(100); //delay is :-(
+
+};
 
 void setPwmDuty(byte duty) {
   OCR1A = (word) (duty*TCNT1_TOP)/100;
 }
+
+
