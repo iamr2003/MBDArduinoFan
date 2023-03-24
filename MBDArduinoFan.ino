@@ -1,6 +1,6 @@
 // Any header files?
 #include <TimerOne.h>
-#define PIN_SENSE 3 //where we connected the fan sense pin. Must be an interrupt capable pin (2 or 3 on Arduino Uno)
+#define PIN_SENSE 2 //where we connected the fan sense pin. Must be an interrupt capable pin (2 or 3 on Arduino Uno)
 #define DEBOUNCE 10 //0 is fine for most fans, crappy fans may require 10 or 20 to filter out noise
 // you can also use a low pass filter on the input pin to stablize the measurement
 #define FANSTUCK_THRESHOLD 500 //if no interrupts were received for 500ms, consider the fan as stuck and report 0 RPM
