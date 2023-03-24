@@ -20,6 +20,7 @@ int p = .001;
 const int baudrate = 115200;
 unsigned long rpm = 0;
 unsigned long loop_iter = 0;
+char buffer[40];
 // #include <TimerOne.h>
 
 //sensing
@@ -219,10 +220,11 @@ void loop() {
   // }
 
   // delay(100);
-  calcRPM(); //DavidM: put this on an interrupt timer. Note: you don't have to sample at 25khz, try like 50 Hz.
+  calcRPM(); //DavidM: put this on an interrupt timer. Note: you don't have to sample at 25khz, try like 100 Hz.
   
-  Serial.print("RPM:");
-  Serial.println(rpm); //DavidM: put this on an interrupt timer
+  //Serial.print("RPM:");
+  sprintf(buffer,'RPM(%u):%2.2d',loop_iter,rpm)
+  Serial.println(buffer); //DavidM: put this on an interrupt timer
 
   loop_iter++;
   delay(100); //delay is :-(
