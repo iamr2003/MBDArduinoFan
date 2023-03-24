@@ -1,5 +1,5 @@
 // Any header files?
-
+#include <TimerOne.h>
 #define PIN_SENSE 3 //where we connected the fan sense pin. Must be an interrupt capable pin (2 or 3 on Arduino Uno)
 #define DEBOUNCE 10 //0 is fine for most fans, crappy fans may require 10 or 20 to filter out noise
 // you can also use a low pass filter on the input pin to stablize the measurement
@@ -21,7 +21,7 @@ const int baudrate = 115200;
 unsigned long rpm = 0;
 unsigned long loop_iter = 0;
 char buffer[40];
-// #include <TimerOne.h>
+// 
 
 //sensing
 
@@ -192,7 +192,7 @@ void loop() {
   // rescale with f to be within bounds
   // Serial.println(goal-1000); 
 
-    scaled =  (goal-1000)/7; //DavidM: why 7? if you can use 8, replace div with >>3
+    scaled =  (goal-1000)>>3; //DavidM: why 7? if you can use 8, replace div with >>3
   // Serial.print("Initial scaled:");
   // Serial.println(scaled);  
 
